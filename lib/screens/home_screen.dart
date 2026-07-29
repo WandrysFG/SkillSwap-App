@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'profile_screen.dart';
+import 'my_skills_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,25 @@ class HomeScreen extends StatelessWidget {
         title: const Text('SkillSwap'),
         actions: [
           IconButton(
+            tooltip: 'Mis Habilidades',
+            icon: const Icon(Icons.stars_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MySkillsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Mi Perfil',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Cerrar sesión',
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await authService.signOut();
