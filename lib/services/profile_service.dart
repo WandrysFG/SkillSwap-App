@@ -4,12 +4,16 @@ import '../models/app_user.dart';
 class ProfileService {
   final SupabaseClient _client = Supabase.instance.client;
 
-  Future<AppUser> fetchProfile(String userId) async {
+  Future<AppUser?> fetchProfile(String userId) async {
     final data = await _client
         .from('users')
         .select()
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
+    if (data == null) {
+      return null; // El perfil no existe todavía
+    }
 
     return AppUser.fromMap(data);
   }

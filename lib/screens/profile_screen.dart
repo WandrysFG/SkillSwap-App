@@ -17,7 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
   final _profileService = ProfileService();
 
-  late Future<AppUser> _profileFuture;
+  late Future<AppUser?> _profileFuture; // 👈 ahora nullable
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileFuture = _loadProfile();
   }
 
-  Future<AppUser> _loadProfile() {
+  Future<AppUser?> _loadProfile() { // 👈 ahora nullable
     final userId = _authService.currentUser!.id;
     return _profileService.fetchProfile(userId);
   }
@@ -42,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(title: const Text('Mi Perfil')),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: FutureBuilder<AppUser>(
+        child: FutureBuilder<AppUser?>( // 👈 ahora nullable
           future: _profileFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -52,7 +52,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return Center(child: Text('Error al cargar el perfil: ${snapshot.error}'));
             }
 
-            final user = snapshot.data!;
+            final user = snapshot.data;
+
+            // 👇 Nuevo: manejo del caso "perfil no encontrado"
+            if (user == null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.person_off_outlined, size: 56, color: Colors.black38),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No encontramos tu perfil.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Esto puede pasar si tu cuenta no completó el registro correctamente.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 20),
+                      TextButton(
+                        onPressed: _refresh,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             final hasAvatar = user.avatarUrl != null && user.avatarUrl!.isNotEmpty;
 
             return RefreshIndicator(
