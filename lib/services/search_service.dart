@@ -4,6 +4,41 @@ import '../models/search_user.dart';
 
 class SearchService {
   final SupabaseClient _client = Supabase.instance.client;
+  Future<SearchUser> fetchUserProfile(String userId) async {
+    final data = await _client
+        .from('users')
+        .select('''
+          id, nombre, bio, avatar_url,
+          user_skills(tipo, skills(nombre))
+        ''')
+        .eq('id', userId)
+        .single();
+
+    final userSkillsData = data['user_skills'] as List? ?? [];
+    final offered = <String>[];
+    final desired = <String>[];
+
+    for (final item in userSkillsData) {
+      final skillData = item['skills'] as Map<String, dynamic>?;
+      final name = skillData?['nombre']?.toString() ?? '';
+      final tipo = item['tipo']?.toString() ?? '';
+      if (name.isEmpty) continue;
+      if (tipo == 'ofrece') {
+        offered.add(name);
+      } else if (tipo == 'quiere') {
+        desired.add(name);
+      }
+    }
+
+    return SearchUser(
+      id: data['id']?.toString() ?? '',
+      nombre: data['nombre']?.toString() ?? 'Usuario',
+      bio: data['bio']?.toString(),
+      avatarUrl: data['avatar_url']?.toString(),
+      habilidadesOfrecidas: offered,
+      habilidadesDeseadas: desired,
+    );
+  }
 
   Future<List<SearchUser>> searchUsersBySkill(String skillId) async {
     final currentUserId = _client.auth.currentUser?.id;
