@@ -8,6 +8,8 @@ import '../services/skills_service.dart';
 import 'my_skills_screen.dart';
 import 'profile_screen.dart';
 import 'public_profile_screen.dart';
+import 'requests_screen.dart';
+import '../services/exchange_service.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final SkillsService _skillsService = SkillsService();
   final SearchService _searchService = SearchService();
+  final ExchangeService _exchangeService = ExchangeService();
 
   List<Skill> _skills = [];
   List<SearchUser> _searchResults = [];
@@ -29,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingSkills = true;
   bool _isSearching = false;
   bool _hasSearched = false;
+  int _pendingCount = 0;
 
   String? _errorMessage;
 
@@ -36,6 +40,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadSkills();
+    _loadPendingCount();
+  }
+
+  Future<void> _loadPendingCount() async {
+    try {
+      final count = await _exchangeService.countPendingReceived();
+      if (!mounted) return;
+      setState(() => _pendingCount = count);
+    } catch (_) {
+      // Si falla el conteo, simplemente no mostramos el badge; no es crítico.
+    }
   }
 
   Future<void> _loadSkills() async {
@@ -120,12 +135,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openPublicProfile(SearchUser user) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PublicProfileScreen(user: user),
+  final skill = _selectedSkill;
+  if (skill == null) return;
+
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => PublicProfileScreen(
+        user: user,
+        requestedSkillId: skill.id,
+        requestedSkillName: skill.nombre,
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +158,20 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('SkillSwap'),
         centerTitle: true,
         actions: [
+          Badge(
+            isLabelVisible: _pendingCount > 0,
+            label: Text('$_pendingCount'),
+            child: IconButton(
+              tooltip: 'Solicitudes',
+              icon: const Icon(Icons.swap_horiz),
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RequestsScreen()),
+                );
+                _loadPendingCount(); // refresca el número al volver
+              },
+            ),
+          ),
           IconButton(
             tooltip: 'Mis habilidades',
             icon: const Icon(Icons.stars_outlined),
