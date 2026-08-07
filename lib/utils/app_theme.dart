@@ -6,6 +6,30 @@ class AppColors {
   static const deepBlue = Color(0xFF0D47A1);
   static const bgLight = Color(0xFFEAF6FB);
 
+  // 🆕 Colores semánticos de estado
+  static const success = Color(0xFF3B9E5F);
+  static const successBg = Color(0xFFE7F5EC);
+  static const warning = Color(0xFFE0A030);
+  static const warningBg = Color(0xFFFBF1DE);
+  static const danger = Color(0xFFD84A3E);
+  static const dangerBg = Color(0xFFFBE9E7);
+  static const neutral = Color(0xFF6B7280);
+  static const neutralBg = Color(0xFFF1F2F4);
+
+  // 🆕 Superficies
+  static const cardBg = Colors.white;
+  static const cardBorder = Color(0xFFE7EEF5);
+
+  // 🆕 Paleta de colores para avatares (se elige por hash del nombre)
+  static const avatarPalette = [
+    Color(0xFFEF6461), // rojo/coral (como "CL" en tu mockup)
+    Color(0xFF8B5CF6), // púrpura (como "SM")
+    Color(0xFF6366F1), // índigo (como "JO")
+    Color(0xFFF59E0B), // naranja (como "LR")
+    Color(0xFF12C2E9), // cyan
+    Color(0xFF3B9E5F), // verde
+  ];
+
   static const primaryGradient = LinearGradient(
     colors: [cyan, blue],
     begin: Alignment.topLeft,

@@ -177,4 +177,14 @@ class ExchangeService {
       estado: row['estado']?.toString() ?? 'pendiente',
     );
   }
+
+  Future<int> countAcceptedExchanges(String userId) async {
+    final response = await _client
+        .from('exchanges')
+        .select('id')
+        .or('usuario_origen_id.eq.$userId,usuario_destino_id.eq.$userId')
+        .eq('estado', 'aceptada');
+
+    return (response as List).length;
+  }
 }
