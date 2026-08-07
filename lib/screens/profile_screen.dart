@@ -17,7 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
   final _profileService = ProfileService();
 
-  late Future<AppUser?> _profileFuture; // 👈 ahora nullable
+  late Future<AppUser?> _profileFuture;
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileFuture = _loadProfile();
   }
 
-  Future<AppUser?> _loadProfile() { // 👈 ahora nullable
+  Future<AppUser?> _loadProfile() {
     final userId = _authService.currentUser!.id;
     return _profileService.fetchProfile(userId);
   }
@@ -41,12 +41,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mi Perfil')),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: FutureBuilder<AppUser?>( // 👈 ahora nullable
+        child: FutureBuilder<AppUser?>(
           future: _profileFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: AppColors.blue));
             }
             if (snapshot.hasError) {
               return Center(child: Text('Error al cargar el perfil: ${snapshot.error}'));
@@ -54,7 +56,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             final user = snapshot.data;
 
-            // 👇 Nuevo: manejo del caso "perfil no encontrado"
             if (user == null) {
               return Center(
                 child: Padding(
@@ -89,6 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final hasAvatar = user.avatarUrl != null && user.avatarUrl!.isNotEmpty;
 
             return RefreshIndicator(
+              color: AppColors.blue,
               onRefresh: _refresh,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
