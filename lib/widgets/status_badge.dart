@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 
-enum ExchangeStatus { pendiente, aceptada, rechazada, cancelada }
+enum ExchangeStatus { pendiente, aceptada, esperandoConfirmacion, completada, rechazada, cancelada }
 
 class StatusBadge extends StatelessWidget {
   final ExchangeStatus status;
@@ -14,6 +14,10 @@ class StatusBadge extends StatelessWidget {
         return (bg: AppColors.warningBg, text: AppColors.warning, label: 'Pendiente');
       case ExchangeStatus.aceptada:
         return (bg: AppColors.successBg, text: AppColors.success, label: 'Aceptada');
+      case ExchangeStatus.esperandoConfirmacion:
+        return (bg: AppColors.warningBg, text: AppColors.warning, label: 'Por confirmar');
+      case ExchangeStatus.completada:
+        return (bg: AppColors.deepBlue.withOpacity(0.1), text: AppColors.deepBlue, label: 'Completada');
       case ExchangeStatus.rechazada:
         return (bg: AppColors.dangerBg, text: AppColors.danger, label: 'Rechazada');
       case ExchangeStatus.cancelada:

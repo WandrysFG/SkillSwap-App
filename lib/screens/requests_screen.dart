@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/exchange_item.dart';
+import '../models/user_skill_item.dart';
 import '../services/exchange_service.dart';
 import '../services/search_service.dart';
+import '../services/skills_service.dart';
 import '../utils/app_theme.dart';
 import '../widgets/avatar_circle.dart';
 import '../widgets/status_badge.dart';
@@ -34,6 +36,8 @@ class RequestsScreen extends StatelessWidget {
           ),
         ),
         body: Container(
+          width: double.infinity,
+          height: double.infinity,
           decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
           child: const TabBarView(
             children: [
@@ -58,6 +62,7 @@ class _RequestsList extends StatefulWidget {
 class _RequestsListState extends State<_RequestsList> {
   final ExchangeService _exchangeService = ExchangeService();
   final SearchService _searchService = SearchService();
+  final SkillsService _skillsService = SkillsService();
 
   final Set<String> _processingIds = {};
   List<ExchangeItem> _items = [];
@@ -161,16 +166,124 @@ class _RequestsListState extends State<_RequestsList> {
   }
 
   Future<void> _acceptRequest(ExchangeItem item) async {
-    final confirmed = await _confirmAction(
-      title: 'Aceptar solicitud',
-      message: '¿Deseas aceptar la solicitud de ${item.otroUsuarioNombre}?',
-      confirmText: 'Aceptar',
+    List<UserSkillItem> offeredBySender = [];
+    try {
+      final senderSkills = await _skillsService.fetchUserSkills(item.otroUsuarioId);
+      offeredBySender = senderSkills.where((s) => s.tipo == 'ofrece').toList();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudieron cargar las habilidades del remitente.')),
+      );
+      return;
+    }
+
+    if (offeredBySender.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Este usuario ya no tiene habilidades ofrecidas disponibles.')),
+      );
+      return;
+    }
+
+    UserSkillItem? tempSelection = offeredBySender.first;
+
+    final chosen = await showModalBottomSheet<UserSkillItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                    Text(
+                      '¿Qué quieres aprender de ${item.otroUsuarioNombre}?',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Elige una de sus habilidades ofrecidas a cambio de lo que te solicitó.',
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 18),
+                    ...offeredBySender.map((skill) {
+                      final selected = tempSelection?.skillId == skill.skillId;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => setModalState(() => tempSelection = skill),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.successBg : AppColors.bgLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: selected ? AppColors.success : Colors.transparent, width: 1.5),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                                  color: selected ? AppColors.success : Colors.black38,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(skill.nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(tempSelection),
+                      child: const Text('Confirmar y Aceptar'),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar', style: TextStyle(color: Colors.black54)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
-    if (!confirmed) return;
+
+    if (chosen == null) return;
+
     await _executeAction(
       item: item,
-      action: () => _exchangeService.acceptRequest(item.id),
-      successMessage: 'Solicitud aceptada correctamente.',
+      action: () => _exchangeService.acceptRequest(exchangeId: item.id, skillOfrecidaId: chosen!.skillId),
+      successMessage: 'Solicitud aceptada. Vas a aprender "${chosen.nombre}".',
       errorMessage: 'No se pudo aceptar la solicitud.',
     );
   }
@@ -205,6 +318,45 @@ class _RequestsListState extends State<_RequestsList> {
     );
   }
 
+  /// Doble check (Issue #6): marca mi parte como completada.
+  /// Si la otra persona ya había confirmado, el intercambio se cierra.
+  Future<void> _markCompleted(ExchangeItem item) async {
+    final confirmed = await _confirmAction(
+      title: 'Marcar como completado',
+      message: item.confirmadoPorOtro
+          ? '${item.otroUsuarioNombre} ya confirmó que se completó. ¿Confirmas tú también para cerrar el intercambio?'
+          : 'Vas a marcar tu parte como completada. El intercambio se cerrará cuando ambos confirmen.',
+      confirmText: 'Confirmar',
+    );
+    if (!confirmed) return;
+
+    await _executeAction(
+      item: item,
+      action: () => _exchangeService.markMyPartAsCompleted(item.id),
+      successMessage: item.confirmadoPorOtro
+          ? '¡Intercambio completado! Ya pueden calificarse.'
+          : 'Confirmado. Esperando que la otra persona también confirme.',
+      errorMessage: 'No se pudo confirmar la finalización.',
+    );
+  }
+
+  /// Botón "No se presentó" (Issue #7).
+  Future<void> _reportNoShow(ExchangeItem item) async {
+    final confirmed = await _confirmAction(
+      title: '¿La otra persona no se presentó?',
+      message: 'Esto cancelará el intercambio y quedará registrado. Úsalo solo si de verdad no hubo sesión.',
+      confirmText: 'Reportar ausencia',
+    );
+    if (!confirmed) return;
+
+    await _executeAction(
+      item: item,
+      action: () => _exchangeService.reportNoShow(item.id),
+      successMessage: 'Ausencia reportada. El intercambio fue cancelado.',
+      errorMessage: 'No se pudo reportar la ausencia.',
+    );
+  }
+
   Future<void> _executeAction({
     required ExchangeItem item,
     required Future<void> Function() action,
@@ -231,6 +383,10 @@ class _RequestsListState extends State<_RequestsList> {
         return ExchangeStatus.pendiente;
       case 'aceptada':
         return ExchangeStatus.aceptada;
+      case 'esperando_confirmacion':
+        return ExchangeStatus.esperandoConfirmacion;
+      case 'completada':
+        return ExchangeStatus.completada;
       case 'rechazada':
         return ExchangeStatus.rechazada;
       default:
@@ -239,59 +395,116 @@ class _RequestsListState extends State<_RequestsList> {
   }
 
   Widget _buildActionButtons(ExchangeItem item) {
-    if (item.estado.toLowerCase() != 'pendiente') return const SizedBox.shrink();
-
+    final estado = item.estado.toLowerCase();
     final isProcessing = _processingIds.contains(item.id);
+
     if (isProcessing) {
       return const Padding(
         padding: EdgeInsets.only(top: 16),
-        child: Center(child: SizedBox(width: 25, height: 25, child: CircularProgressIndicator(strokeWidth: 2.5))),
-      );
-    }
-
-    if (widget.isSent) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger)),
-            onPressed: () => _cancelRequest(item),
-            icon: const Icon(Icons.close),
-            label: const Text('Cancelar solicitud'),
+        child: Center(
+          child: SizedBox(
+            width: 25,
+            height: 25,
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.blue),
           ),
         ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Row(
-        children: [
-          Expanded(
+    // Solicitud pendiente
+    if (estado == 'pendiente') {
+      if (widget.isSent) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: SizedBox(
+            width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger)),
-              onPressed: () => _rejectRequest(item),
+              onPressed: () => _cancelRequest(item),
               icon: const Icon(Icons.close),
-              label: const Text('Rechazar'),
+              label: const Text('Cancelar solicitud'),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.success),
-              onPressed: () => _acceptRequest(item),
-              icon: const Icon(Icons.check),
-              label: const Text('Aceptar'),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger)),
+                onPressed: () => _rejectRequest(item),
+                icon: const Icon(Icons.close),
+                label: const Text('Rechazar'),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+                onPressed: () => _acceptRequest(item),
+                icon: const Icon(Icons.check),
+                label: const Text('Aceptar'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Aceptada o esperando confirmación: se puede completar o reportar ausencia
+    if (estado == 'aceptada' || estado == 'esperando_confirmacion') {
+      final yaConfirmeYo = item.confirmadoPorMi;
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (item.confirmadoPorOtro && !yaConfirmeYo)
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: AppColors.successBg, borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  '${item.otroUsuarioNombre} ya confirmó que se completó. ¡Confirma tú para cerrarlo!',
+                  style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w600),
+                ),
+              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger)),
+                    onPressed: () => _reportNoShow(item),
+                    icon: const Icon(Icons.person_off_outlined, size: 18),
+                    label: const Text('No se presentó'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: yaConfirmeYo ? Colors.black26 : AppColors.success),
+                    onPressed: yaConfirmeYo ? null : () => _markCompleted(item),
+                    icon: Icon(yaConfirmeYo ? Icons.hourglass_empty : Icons.check_circle_outline, size: 18),
+                    label: Text(yaConfirmeYo ? 'Ya confirmaste' : 'Completado'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // completada, rechazada, cancelada → sin acciones
+    return const SizedBox.shrink();
   }
 
   Widget _buildCard(ExchangeItem item) {
     final avatarUrl = item.otroUsuarioAvatarUrl?.trim();
+    final isPending = item.estado.toLowerCase() == 'pendiente';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -340,8 +553,10 @@ class _RequestsListState extends State<_RequestsList> {
                         const SizedBox(height: 6),
                         _buildSkillRow(
                           icon: Icons.swap_horiz,
-                          label: widget.isSent ? 'Ofreciste' : 'Te ofrece',
-                          skill: item.habilidadOfrecidaNombre,
+                          label: widget.isSent ? 'Ofreces' : 'Te ofrece',
+                          skill: item.habilidadOfrecidaNombre ??
+                              (isPending ? 'A definir al aceptar' : 'Sin especificar'),
+                          pending: item.habilidadOfrecidaNombre == null && isPending,
                         ),
                       ],
                     ),
@@ -358,7 +573,12 @@ class _RequestsListState extends State<_RequestsList> {
     );
   }
 
-  Widget _buildSkillRow({required IconData icon, required String label, required String skill}) {
+  Widget _buildSkillRow({
+    required IconData icon,
+    required String label,
+    required String skill,
+    bool pending = false,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,7 +589,14 @@ class _RequestsListState extends State<_RequestsList> {
             TextSpan(
               children: [
                 TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                TextSpan(text: skill, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                TextSpan(
+                  text: skill,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: pending ? Colors.black45 : Colors.black87,
+                    fontStyle: pending ? FontStyle.italic : FontStyle.normal,
+                  ),
+                ),
               ],
             ),
           ),
@@ -381,11 +608,12 @@ class _RequestsListState extends State<_RequestsList> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.blue));
     }
 
     if (_errorMessage != null) {
       return RefreshIndicator(
+        color: AppColors.blue,
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -406,6 +634,7 @@ class _RequestsListState extends State<_RequestsList> {
 
     if (_items.isEmpty) {
       return RefreshIndicator(
+        color: AppColors.blue,
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -422,6 +651,7 @@ class _RequestsListState extends State<_RequestsList> {
     }
 
     return RefreshIndicator(
+      color: AppColors.blue,
       onRefresh: _refresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),

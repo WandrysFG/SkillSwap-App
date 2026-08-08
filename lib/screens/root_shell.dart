@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
+import 'chat_list_screen.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -15,6 +16,7 @@ class _RootShellState extends State<RootShell> {
 
   final List<Widget> _tabs = const [
     HomeScreen(),
+    ChatListScreen(), 
     ProfileScreen(),
   ];
 
@@ -42,12 +44,21 @@ class _RootShellState extends State<RootShell> {
                   selected: _index == 0,
                   onTap: () => setState(() => _index = 0),
                 ),
+                
+                _NavItem(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  activeIcon: Icons.chat_bubble_rounded,
+                  label: 'Mensajes',
+                  selected: _index == 1,
+                  onTap: () => setState(() => _index = 1),
+                ),
+
                 _NavItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
                   label: 'Mi Perfil',
-                  selected: _index == 1,
-                  onTap: () => setState(() => _index = 1),
+                  selected: _index == 2,
+                  onTap: () => setState(() => _index = 2),
                 ),
               ],
             ),
