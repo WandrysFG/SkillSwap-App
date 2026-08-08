@@ -42,11 +42,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   void initState() {
     super.initState();
     _loadExchangeCount();
-    if (widget.requestedSkillId != null) {
-      _loadMyOfferedSkills();
-    } else {
-      _loadingMySkills = false;
-    }
+    _loadMyOfferedSkills();
   }
 
   Future<void> _loadExchangeCount() async {
@@ -54,8 +50,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       final count = await _exchangeService.countAcceptedExchanges(widget.user.id);
       if (!mounted) return;
       setState(() => _exchangeCount = count);
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadMyOfferedSkills() async {
@@ -74,9 +69,29 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   Future<void> _handleSendRequest() async {
-    UserSkillItem? tempSelection = _myOfferedSkills.isNotEmpty ? _myOfferedSkills.first : null;
+    if (_myOfferedSkills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes tener al menos una habilidad ofrecida para enviar solicitudes.')),
+      );
+      return;
+    }
 
-    final chosen = await showModalBottomSheet<UserSkillItem>(
+    final offeredByTargetUser =
+        widget.user.habilidadesOfrecidas.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+
+    if (offeredByTargetUser.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Este usuario no ofrece ninguna habilidad actualmente.')),
+      );
+      return;
+    }
+
+    String? selectedTargetSkillName =
+        (widget.requestedSkillName != null && offeredByTargetUser.contains(widget.requestedSkillName))
+            ? widget.requestedSkillName
+            : offeredByTargetUser.first;
+
+    final chosenSkillName = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -102,50 +117,61 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(4)),
                       ),
                     ),
-                    Text(
-                      '¿Qué le ofreces a cambio?',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                    const Text(
+                      '¿Qué deseas aprender de este usuario?',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Selecciona una de tus habilidades para proponer el intercambio.',
-                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    const Text(
+                      'Selecciona la habilidad que te interesa de su repertorio.',
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
                     ),
                     const SizedBox(height: 18),
-                    ..._myOfferedSkills.map((skill) {
-                      final selected = tempSelection?.skillId == skill.skillId;
+                    ...offeredByTargetUser.map((skillName) {
+                      final selected = selectedTargetSkillName == skillName;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(14),
-                          onTap: () => setModalState(() => tempSelection = skill),
+                          onTap: () => setModalState(() => selectedTargetSkillName = skillName),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                             decoration: BoxDecoration(
-                              color: selected ? AppColors.successBg : AppColors.bgLight,
+                              color: selected ? AppColors.blue.withOpacity(0.1) : AppColors.bgLight,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: selected ? AppColors.success : Colors.transparent, width: 1.5),
+                              border: Border.all(color: selected ? AppColors.blue : Colors.transparent, width: 1.5),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                                  color: selected ? AppColors.success : Colors.black38,
+                                  color: selected ? AppColors.blue : Colors.black38,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),
-                                Text(skill.nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                                Expanded(
+                                  child: Text(skillName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                                ),
                               ],
                             ),
                           ),
                         ),
                       );
                     }),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(12)),
+                      child: const Text(
+                        'Quien reciba tu solicitud elegirá cuál de tus habilidades ofrecidas quiere aprender a cambio.',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     GradientButton(
-                      label: 'Confirmar Solicitud',
+                      label: 'Continuar',
                       loading: false,
-                      onPressed: () => Navigator.of(context).pop(tempSelection),
+                      onPressed: () => Navigator.of(context).pop(selectedTargetSkillName),
                     ),
                     const SizedBox(height: 8),
                     Center(
@@ -163,15 +189,17 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       },
     );
 
-    if (chosen == null) return;
+    if (chosenSkillName == null) return;
 
     setState(() => _sending = true);
 
     try {
+      final catalog = await _skillsService.fetchCatalog();
+      final targetSkillMatch = catalog.firstWhere((s) => s.nombre.toLowerCase() == chosenSkillName.toLowerCase());
+
       await _exchangeService.sendRequest(
         usuarioDestinoId: widget.user.id,
-        skillOfrecidaId: chosen.skillId,
-        skillSolicitadaId: widget.requestedSkillId!,
+        skillSolicitadaId: targetSkillMatch.id,
       );
 
       if (!mounted) return;
@@ -181,11 +209,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Solicitud enviada: ofreces "${chosen.nombre}" a cambio de "${widget.requestedSkillName!}".',
-          ),
-        ),
+        SnackBar(content: Text('¡Solicitud enviada con éxito para aprender "$chosenSkillName"!')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -195,8 +219,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       );
     }
   }
-
-  bool get _hasAvatar => widget.user.avatarUrl != null && widget.user.avatarUrl!.trim().isNotEmpty;
 
   String get _biografia {
     final bio = widget.user.bio?.trim();
@@ -215,47 +237,32 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         elevation: 0,
       ),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildProfileHeader(),
-              const SizedBox(height: 24),
-              _buildSkillsSection(
-                title: 'Ofrece',
-                emptyMessage: 'Este usuario todavía no ha agregado habilidades ofrecidas.',
-                skills: widget.user.habilidadesOfrecidas,
-              ),
-              const SizedBox(height: 20),
-              _buildSkillsSection(
-                title: 'Quiere aprender',
-                emptyMessage: 'Este usuario todavía no ha agregado habilidades deseadas.',
-                skills: widget.user.habilidadesDeseadas,
-              ),
-              if (widget.requestedSkillId != null) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(16)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: AppColors.blue),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Estás por solicitar: ${widget.requestedSkillName}',
-                          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.deepBlue),
-                        ),
-                      ),
-                    ],
-                  ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildProfileHeader(),
+                const SizedBox(height: 24),
+                _buildSkillsSection(
+                  title: 'Ofrece',
+                  emptyMessage: 'Este usuario todavía no ha agregado habilidades ofrecidas.',
+                  skills: widget.user.habilidadesOfrecidas,
                 ),
                 const SizedBox(height: 20),
+                _buildSkillsSection(
+                  title: 'Quiere aprender',
+                  emptyMessage: 'Este usuario todavía no ha agregado habilidades deseadas.',
+                  skills: widget.user.habilidadesDeseadas,
+                ),
+                const SizedBox(height: 24),
                 _buildSendRequestButton(),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -282,7 +289,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (_loadingMySkills) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CircularProgressIndicator(color: AppColors.blue)),
       );
     }
 
@@ -324,7 +331,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),
-
         if (_exchangeCount != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
