@@ -69,26 +69,35 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 72,
                         height: 72,
                         decoration: const BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          color: AppColors.blue,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 36),
+                        child: const Icon(
+                          Icons.swap_horiz_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ShaderMask(
-                      shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
-                      child: const Text(
-                        'SkillSwap',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: Colors.white),
+                    const Text(
+                      'SkillSwap',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.blue,
                       ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Iniciar Sesión',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1F2937),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -98,17 +107,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    const Text('Email', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const Text(
+                      'Email',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: AppInputStyle.decoration(hint: 'tu@email.com', icon: Icons.email_outlined),
-                      validator: (v) => (v == null || !v.contains('@')) ? 'Correo inválido' : null,
+                      decoration: AppInputStyle.decoration(
+                        hint: 'tu@email.com',
+                        icon: Icons.email_outlined,
+                      ),
+                      validator: (v) => (v == null || !v.contains('@'))
+                          ? 'Correo inválido'
+                          : null,
                     ),
                     const SizedBox(height: 18),
 
-                    const Text('Contraseña', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const Text(
+                      'Contraseña',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _passwordController,
@@ -117,16 +143,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         hint: 'Ingresa tu contraseña',
                         icon: Icons.lock_outline,
                         suffix: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.black45),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black45,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
                       ),
-                      validator: (v) => (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
+                      validator: (v) => (v == null || v.length < 6)
+                          ? 'Mínimo 6 caracteres'
+                          : null,
                     ),
 
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 12),
-                      Text(_errorMessage!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
 
                     const SizedBox(height: 26),
@@ -142,14 +181,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
                           ),
                           child: const Text.rich(
                             TextSpan(
                               text: '¿No tienes cuenta? ',
                               style: TextStyle(color: Colors.black54),
                               children: [
-                                TextSpan(text: 'Regístrate', style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.bold)),
+                                TextSpan(
+                                  text: 'Regístrate',
+                                  style: TextStyle(
+                                    color: AppColors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),

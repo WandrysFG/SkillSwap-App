@@ -26,9 +26,9 @@ class _RootShellState extends State<RootShell> {
       body: IndexedStack(index: _index, children: _tabs),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.blue,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -2)),
+            BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, -2)),
           ],
         ),
         child: SafeArea(
@@ -86,7 +86,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.blue : Colors.black38;
+    final color = selected ? Colors.white : Colors.white70;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),

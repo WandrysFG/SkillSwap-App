@@ -15,6 +15,7 @@ class ExchangeService {
 
   Future<void> sendRequest({
     required String usuarioDestinoId,
+    required String skillOfrecidaId,
     required String skillSolicitadaId,
   }) async {
     final usuarioOrigenId = _requireUserId();
@@ -202,7 +203,7 @@ class ExchangeService {
         .from('exchanges')
         .select('id')
         .or('usuario_origen_id.eq.$userId,usuario_destino_id.eq.$userId')
-        .inFilter('estado', ['aceptada', 'esperando_confirmacion', 'completada']);
+        .eq('estado', 'completada');
 
     return (response as List).length;
   }

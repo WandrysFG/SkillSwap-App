@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const cyan = Color(0xFF12C2E9);
-  static const blue = Color(0xFF1E6FE0);
-  static const deepBlue = Color(0xFF0D47A1);
-  static const bgLight = Color(0xFFEAF6FB);
+  static const cyan = Color(0xFF0891B2);
+  static const blue = Color(0xFF1D4ED8);
+  static const deepBlue = Color(0xFF0F172A);
+  static const bgLight = Color(0xFFE0F2FE);
 
-  // 🆕 Colores semánticos de estado
   static const success = Color(0xFF3B9E5F);
   static const successBg = Color(0xFFE7F5EC);
   static const warning = Color(0xFFE0A030);
@@ -16,35 +15,42 @@ class AppColors {
   static const neutral = Color(0xFF6B7280);
   static const neutralBg = Color(0xFFF1F2F4);
 
-  // 🆕 Superficies
   static const cardBg = Colors.white;
-  static const cardBorder = Color(0xFFE7EEF5);
+  static const cardBorder = Color(0xFFE2E8F0);
 
-  // 🆕 Paleta de colores para avatares (se elige por hash del nombre)
+  static const navBarBg = deepBlue;
+
   static const avatarPalette = [
-    Color(0xFFEF6461), // rojo/coral (como "CL" en tu mockup)
-    Color(0xFF8B5CF6), // púrpura (como "SM")
-    Color(0xFF6366F1), // índigo (como "JO")
-    Color(0xFFF59E0B), // naranja (como "LR")
-    Color(0xFF12C2E9), // cyan
-    Color(0xFF3B9E5F), // verde
+    Color(0xFFEF6461),
+    Color(0xFF8B5CF6),
+    Color(0xFF6366F1),
+    Color(0xFFF59E0B),
+    Color(0xFF0891B2),
+    Color(0xFF3B9E5F),
   ];
 
   static const primaryGradient = LinearGradient(
-    colors: [cyan, blue],
+    colors: [blue, blue],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const backgroundGradient = LinearGradient(
-    colors: [Color(0xFFE3F6FC), Color(0xFFDCEBFA)],
+    colors: [Color(0xFFE0F2FE), Color(0xFFD3E3FA)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
+
+  // Sombra con tinte de marca en vez de gris neutro
+  static Color cardShadow = blue.withOpacity(0.08);
 }
 
 class AppInputStyle {
-  static InputDecoration decoration({required String hint, required IconData icon, Widget? suffix}) {
+  static InputDecoration decoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+  }) {
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon, color: AppColors.blue),
