@@ -78,8 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _hasOwnSkills = skills.any((s) => s.tipo == 'ofrece');
       });
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadCatalog() async {
@@ -101,7 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _isLoadingCatalog = false;
-        _errorMessage = 'No se pudieron cargar las habilidades. Intenta nuevamente.';
+        _errorMessage =
+            'No se pudieron cargar las habilidades. Intenta nuevamente.';
       });
     }
   }
@@ -136,7 +136,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _isBrowsing = false;
-        _errorMessage = 'No se pudo buscar en esta categoría. Intenta nuevamente.';
+        _errorMessage =
+            'No se pudo buscar en esta categoría. Intenta nuevamente.';
       });
     }
   }
@@ -252,16 +253,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: ShaderMask(
-          shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
-          child: const Text(
-            'SkillSwap',
-            style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 20),
+        title: const Text(
+          'SkillSwap',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            fontSize: 20,
           ),
         ),
         centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.blue,
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           Badge(
@@ -271,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: IconButton(
               tooltip: 'Solicitudes',
               icon: const Icon(Icons.notifications_none_rounded),
-              color: AppColors.blue,
+              color: Colors.white,
               onPressed: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const RequestsScreen()),
@@ -283,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Cerrar sesión',
             icon: const Icon(Icons.logout),
-            color: AppColors.blue,
+            color: Colors.white,
             onPressed: _signOut,
           ),
         ],
@@ -328,9 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Solicitudes',
             badgeCount: _pendingCount,
             onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RequestsScreen()),
-              );
+              await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const RequestsScreen()));
               _loadPendingCount();
             },
           ),
@@ -341,9 +343,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.stars_outlined,
             label: 'Mis Habilidades',
             onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MySkillsScreen()),
-              );
+              await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const MySkillsScreen()));
               _loadOwnSkillsStatus();
             },
           ),
@@ -370,7 +372,11 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Agrega tus habilidades',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.deepBlue),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.deepBlue,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 const Text(
@@ -383,13 +389,16 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           TextButton(
             onPressed: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MySkillsScreen()),
-              );
+              await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const MySkillsScreen()));
               _loadOwnSkillsStatus();
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.deepBlue),
-            child: const Text('Agregar', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Agregar',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -401,7 +410,13 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: TextField(
         onChanged: _onSearchTextChanged,
@@ -410,12 +425,19 @@ class _HomeScreenState extends State<HomeScreen> {
           prefixIcon: const Icon(Icons.search, color: AppColors.blue),
           suffixIcon: _isTextSearchActive
               ? IconButton(
-                  icon: const Icon(Icons.close, color: Colors.black38, size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.black38,
+                    size: 20,
+                  ),
                   onPressed: _clearSearch,
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16,
+            horizontal: 4,
+          ),
         ),
       ),
     );
@@ -464,7 +486,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        if (_selectedCategory != null && _skillsInSelectedCategory.isNotEmpty) ...[
+        if (_selectedCategory != null &&
+            _skillsInSelectedCategory.isNotEmpty) ...[
           const SizedBox(height: 10),
           SizedBox(
             height: 34,
@@ -478,11 +501,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 return GestureDetector(
                   onTap: () => _selectSkill(skill),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.deepBlue.withOpacity(0.1) : Colors.transparent,
+                      color: selected
+                          ? AppColors.deepBlue.withOpacity(0.1)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: selected ? AppColors.deepBlue : Colors.black12),
+                      border: Border.all(
+                        color: selected ? AppColors.deepBlue : Colors.black12,
+                      ),
                     ),
                     child: Text(
                       skill.nombre,
@@ -501,7 +531,11 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 18),
         const Text(
           'Habilidades sugeridas',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 12),
         _buildBrowseResultsList(),
@@ -541,7 +575,11 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           'Resultados para "${_searchText.trim()}"',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 12),
         ..._searchResults.map(_buildUserCard),
@@ -556,7 +594,9 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Algo salió mal',
         subtitle: _errorMessage!,
         actionLabel: 'Intentar nuevamente',
-        onAction: () => _selectedCategory != null ? _selectCategory(_selectedCategory!) : _loadCatalog(),
+        onAction: () => _selectedCategory != null
+            ? _selectCategory(_selectedCategory!)
+            : _loadCatalog(),
         outlinedAction: true,
       );
     }
@@ -587,7 +627,13 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -596,7 +642,11 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              AvatarCircle(nombre: user.nombre, avatarUrl: user.avatarUrl, size: 46),
+              AvatarCircle(
+                nombre: user.nombre,
+                avatarUrl: user.avatarUrl,
+                size: 46,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -604,16 +654,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       user.nombre.trim().isNotEmpty ? user.nombre : 'Usuario',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       user.habilidadesOfrecidas.isEmpty
-                          ? (biography == null || biography.isEmpty ? 'Sin biografía disponible.' : biography)
+                          ? (biography == null || biography.isEmpty
+                                ? 'Sin biografía disponible.'
+                                : biography)
                           : 'Ofrece: ${user.habilidadesOfrecidas.take(3).join(", ")}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
@@ -652,7 +710,13 @@ class _QuickAccessCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -666,7 +730,10 @@ class _QuickAccessCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

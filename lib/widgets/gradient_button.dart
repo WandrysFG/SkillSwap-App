@@ -6,16 +6,25 @@ class GradientButton extends StatelessWidget {
   final bool loading;
   final VoidCallback onPressed;
 
-  const GradientButton({super.key, required this.label, required this.loading, required this.onPressed});
+  const GradientButton({
+    super.key,
+    required this.label,
+    required this.loading,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        color: AppColors.blue,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: AppColors.blue.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: AppColors.blue.withOpacity(0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Material(
@@ -27,8 +36,22 @@ class GradientButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: loading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ),
         ),

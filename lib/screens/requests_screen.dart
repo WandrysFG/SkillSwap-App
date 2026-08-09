@@ -22,11 +22,11 @@ class RequestsScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Solicitudes'),
           centerTitle: true,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          backgroundColor: AppColors.blue,
+          foregroundColor: Colors.white,
           elevation: 0,
           bottom: TabBar(
-            labelColor: AppColors.blue,
+            labelColor: Colors.white,
             unselectedLabelColor: Colors.black45,
             indicatorColor: AppColors.blue,
             tabs: const [

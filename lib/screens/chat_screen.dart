@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/message.dart';
 import '../services/chat_service.dart';
+import '../widgets/review_modal.dart';
 
 class ChatScreen extends StatefulWidget {
   final String exchangeId;
   final String otroUsuarioNombre;
   final String otroUsuarioId;
+  final String temaIntercambio;
 
   const ChatScreen({
     super.key,
     required this.exchangeId,
     required this.otroUsuarioNombre,
     required this.otroUsuarioId,
+    required this.temaIntercambio,
   });
 
   @override
@@ -23,17 +26,22 @@ class _ChatScreenState extends State<ChatScreen> {
   final _client = Supabase.instance.client;
   final ChatService _chatService = ChatService();
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   late final String _myUserId;
-
-  // NUEVO: Variable para mantener el canal abierto
   late final Stream<List<Message>> _messagesStream;
 
   @override
   void initState() {
     super.initState();
     _myUserId = _client.auth.currentUser!.id;
-    // NUEVO: Inicializamos el stream una sola vez aquí
     _messagesStream = _chatService.getMessagesStream(widget.exchangeId);
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _sendMessage() async {
@@ -41,6 +49,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
 
     _messageController.clear();
+    _focusNode.requestFocus();
+
     try {
       await _chatService.sendMessage(
         exchangeId: widget.exchangeId,
@@ -56,17 +66,26 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // --- LÓGICA DE RESOLUCIÓN (Issue #6 y #7) ---
+  void _abrirModalResena() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ReviewModal(
+        exchangeId: widget.exchangeId,
+        evaluatedId: widget.otroUsuarioId,
+        evaluatedName: widget.otroUsuarioNombre,
+      ),
+    );
+  }
   
   Future<void> _marcarCompletada() async {
-    // Primer paso del Doble Check
     await _client.from('exchanges').update({
       'estado': 'esperando_confirmacion',
     }).eq('id', widget.exchangeId);
   }
 
   Future<void> _confirmarCompletada() async {
-    // Segundo paso del Doble Check (Cierre definitivo)
     await _client.from('exchanges').update({
       'estado': 'completada',
     }).eq('id', widget.exchangeId);
@@ -75,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('¡Intercambio finalizado con éxito!')),
       );
-      // Aquí, en el futuro, abriremos el modal para calificar al usuario
+      _abrirModalResena();
     }
   }
 
@@ -88,11 +107,10 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Has reportado la ausencia. Intercambio cancelado.')),
       );
-      Navigator.pop(context); // Sacamos al usuario del chat
+      Navigator.pop(context);
     }
   }
 
-  // Escuchamos el estado del intercambio en tiempo real
   Stream<List<Map<String, dynamic>>> get _exchangeStream =>
       _client.from('exchanges').stream(primaryKey: ['id']).eq('id', widget.exchangeId);
 
@@ -101,7 +119,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _exchangeStream,
       builder: (context, snapshot) {
-        // Obtenemos el estado actual del intercambio
         final exchangeData = snapshot.data?.firstOrNull;
         final estado = exchangeData?['estado'] ?? 'aceptada';
         final isCompletada = estado == 'completada';
@@ -109,12 +126,17 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           backgroundColor: Colors.grey.shade50,
           appBar: AppBar(
-            title: Text(widget.otroUsuarioNombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.otroUsuarioNombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(widget.temaIntercambio, style: const TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w600)),
+              ],
+            ),
             backgroundColor: Colors.white,
             foregroundColor: Colors.black87,
             elevation: 1,
             actions: [
-              // Solo mostramos las opciones si el chat no ha sido completado
               if (!isCompletada)
                 PopupMenuButton<String>(
                   onSelected: (value) {
@@ -144,7 +166,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           body: Column(
             children: [
-              // --- BANNERS DE ESTADO ---
               if (estado == 'esperando_confirmacion')
                 Container(
                   color: Colors.orange.shade100,
@@ -178,11 +199,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.green.shade100,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  child: Center(
-                    child: Text(
-                      '✅ Intercambio finalizado con éxito',
-                      style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold),
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '✅ Intercambio finalizado con éxito',
+                        style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _abrirModalResena,
+                        icon: Icon(Icons.star_rate_rounded, size: 18, color: Colors.green.shade800),
+                        label: const Text('Calificar usuario'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green.shade800,
+                          side: BorderSide(color: Colors.green.shade800),
+                          minimumSize: const Size(200, 36),
+                        ),
+                      )
+                    ],
                   ),
                 ),
 
@@ -198,10 +232,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               
-              // --- ÁREA DE MENSAJES ---
               Expanded(
                 child: StreamBuilder<List<Message>>(
-                  stream: _messagesStream, // <-- USAMOS LA NUEVA VARIABLE AQUÍ
+                  stream: _messagesStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -214,7 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
 
                     return ListView.builder(
-                      reverse: false,
+                      reverse: true, // <-- CAMBIO APLICADO: Mantiene la vista pegada al fondo
                       itemCount: messages.length,
                       padding: const EdgeInsets.all(16),
                       itemBuilder: (context, index) {
@@ -223,20 +256,43 @@ class _ChatScreenState extends State<ChatScreen> {
                         
                         return Align(
                           alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isMe ? Colors.blue : Colors.white,
-                              borderRadius: BorderRadius.circular(16).copyWith(
-                                bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-                                bottomLeft: !isMe ? const Radius.circular(0) : const Radius.circular(16),
+                          child: GestureDetector(
+                            onLongPress: () {
+                              if (!isMe) return;
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Eliminar mensaje'),
+                                  content: const Text('¿Estás seguro de que quieres eliminar este mensaje para todos?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _chatService.deleteMessage(msg.id);
+                                      },
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isMe ? Colors.blue : Colors.white,
+                                borderRadius: BorderRadius.circular(16).copyWith(
+                                  bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
+                                  bottomLeft: !isMe ? const Radius.circular(0) : const Radius.circular(16),
+                                ),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
                               ),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-                            ),
-                            child: Text(
-                              msg.content,
-                              style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+                              child: Text(
+                                msg.content,
+                                style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+                              ),
                             ),
                           ),
                         );
@@ -246,7 +302,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
 
-              // --- CAJA DE TEXTO (Se oculta si ya se completó) ---
               if (!isCompletada)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -260,6 +315,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         Expanded(
                           child: TextField(
                             controller: _messageController,
+                            focusNode: _focusNode,
                             decoration: InputDecoration(
                               hintText: 'Escribe un mensaje...',
                               border: OutlineInputBorder(

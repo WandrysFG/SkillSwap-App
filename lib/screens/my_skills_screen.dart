@@ -68,7 +68,9 @@ class _MySkillsScreenState extends State<MySkillsScreen> {
       context: context,
       catalog: _catalog,
       excludeIds: excludeIds,
-      title: tipo == 'ofrece' ? 'Elige qué ofreces' : 'Elige qué quieres aprender',
+      title: tipo == 'ofrece'
+          ? 'Elige qué ofreces'
+          : 'Elige qué quieres aprender',
     );
 
     if (chosen == null) return;
@@ -109,35 +111,44 @@ class _MySkillsScreenState extends State<MySkillsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis Habilidades')),
+      appBar: AppBar(
+        title: const Text('Mis Habilidades'),
+        centerTitle: true,
+        backgroundColor: AppColors.blue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Center(child: Text(_errorMessage!))
-                : RefreshIndicator(
-                    onRefresh: _loadAll,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                      children: [
-                        _buildSection(
-                          title: 'Ofrezco',
-                          icon: Icons.volunteer_activism,
-                          items: _ofrece,
-                          tipo: 'ofrece',
-                        ),
-                        const SizedBox(height: 28),
-                        _buildSection(
-                          title: 'Quiero aprender',
-                          icon: Icons.school_outlined,
-                          items: _quiere,
-                          tipo: 'quiere',
-                        ),
-                      ],
-                    ),
+            ? Center(child: Text(_errorMessage!))
+            : RefreshIndicator(
+                onRefresh: _loadAll,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 24,
                   ),
+                  children: [
+                    _buildSection(
+                      title: 'Ofrezco',
+                      icon: Icons.volunteer_activism,
+                      items: _ofrece,
+                      tipo: 'ofrece',
+                    ),
+                    const SizedBox(height: 28),
+                    _buildSection(
+                      title: 'Quiero aprender',
+                      icon: Icons.school_outlined,
+                      items: _quiere,
+                      tipo: 'quiere',
+                    ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -155,7 +166,11 @@ class _MySkillsScreenState extends State<MySkillsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -167,7 +182,11 @@ class _MySkillsScreenState extends State<MySkillsScreen> {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.deepBlue),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: AppColors.deepBlue,
+                ),
               ),
               const Spacer(),
               TextButton.icon(
@@ -184,7 +203,10 @@ class _MySkillsScreenState extends State<MySkillsScreen> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Todavía no has agregado nada aquí.',
-                style: TextStyle(color: Colors.black38, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                  color: Colors.black38,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             )
           else
